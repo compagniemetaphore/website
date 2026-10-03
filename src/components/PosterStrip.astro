@@ -1,0 +1,22 @@
+---
+import { getEntry } from 'astro:content';
+import { Picture } from 'astro:assets';
+import Icon from './Icon.astro';
+
+// Posters of past shows, from the "historique" page.
+const history = await getEntry('pages', 'historique');
+const posters = history?.data.posters?.slice(0, 10) ?? [];
+---
+{history && posters.length > 0 && (
+    <section class="section history">
+        <div class="section-head">
+            <h2 class="section-title">Trente ans d'affiches</h2>
+            <a href="/historique" class="button is-small">{history.data.title} <Icon name="arrow-right" /></a>
+        </div>
+        <a href="/historique" class="poster-strip" aria-label={history.data.title}>
+            {posters.map((image) => (
+                <Picture src={image} widths={[200, 400]} sizes="200px" formats={['avif', 'webp']} alt="" loading="lazy" />
+            ))}
+        </a>
+    </section>
+)}

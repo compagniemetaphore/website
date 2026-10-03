@@ -1,0 +1,39 @@
+---
+import { calendarWeeks, formatTime, type AgendaMonth } from '../lib/agenda';
+
+interface Props {
+    month: AgendaMonth;
+}
+
+const { month } = Astro.props;
+const weeks = calendarWeeks(month.key);
+const labels = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+---
+<div class="calendar" aria-hidden="true">
+    <div class="week-days">
+        {labels.map((label) => <span>{label}</span>)}
+    </div>
+    {weeks.map((week) => (
+        <div class="week">
+            {week.map((day) => {
+                const performances = month.days.get(day);
+                const classes = ['day', { 'is-dull': !day.startsWith(month.key), 'has-events': performances }];
+                return performances ? (
+                    <time class:list={classes} datetime={day} tabindex="-1">
+                        {Number(day.slice(8))}
+                        <ul class="day-events">
+                            {performances.map((p) => (
+                                <li>
+                                    <a href={`/${p.slug}`} tabindex="-1">{p.title} · {formatTime(p.date)}</a>
+                                    <small>{p.location}</small>
+                                </li>
+                            ))}
+                        </ul>
+                    </time>
+                ) : (
+                    <time class:list={classes} datetime={day}>{Number(day.slice(8))}</time>
+                );
+            })}
+        </div>
+    ))}
+</div>

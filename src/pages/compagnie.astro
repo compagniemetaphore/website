@@ -1,0 +1,54 @@
+---
+import { getEntry, render } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import Figures from '../components/Figures.astro';
+import Icon from '../components/Icon.astro';
+import Paragraphs from '../components/Paragraphs.astro';
+import Section from '../components/Section.astro';
+import Team from '../components/Team.astro';
+import { frenchSpacing as fr } from '../lib/typography.mjs';
+
+const page = (await getEntry('pages', 'compagnie'))!;
+const { data } = page;
+const { Content } = await render(page);
+---
+<Base {...data}>
+    {data.figures.length > 0 && (
+        <section class="section"><Figures figures={data.figures} /></section>
+    )}
+    {page.body?.trim() && (
+        <section class="section is-contrasted project">
+            <div class="prose"><Content /></div>
+            {data.quote && (
+                <blockquote class="big-quote">
+                    <Icon name="quotes" />
+                    <p>{fr(data.quote)}</p>
+                </blockquote>
+            )}
+        </section>
+    )}
+    {data.team.length > 0 && (
+        <Section title={data.teamTitle}>
+            <Team members={data.team} />
+        </Section>
+    )}
+    {data.board.length > 0 && (
+        <Section title="Le bureau">
+            <ul class="credits">
+                {data.board.map((person) => (
+                    <li><strong>{person.name}</strong><span>{person.role}</span></li>
+                ))}
+            </ul>
+        </Section>
+    )}
+    {data.collaborators.length > 0 && (
+        <Section title="Ils ont travaillé avec nous">
+            <ul class="credits">
+                {data.collaborators.map((person) => (
+                    <li><strong>{person.name}</strong>{person.role && <span>{person.role}</span>}</li>
+                ))}
+            </ul>
+            <div class="thanks"><Paragraphs text={data.thanks} /></div>
+        </Section>
+    )}
+</Base>

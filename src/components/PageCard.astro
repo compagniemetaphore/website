@@ -1,0 +1,61 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { Picture } from 'astro:assets';
+import Icon from './Icon.astro';
+import { frenchSpacing as fr } from '../lib/typography.mjs';
+import { shortDate, upcomingPerformances } from '../lib/agenda';
+
+interface Props {
+    page: CollectionEntry<'spectacles'>;
+}
+
+const { page } = Astro.props;
+const href = `/${page.id}`;
+const upcoming = await upcomingPerformances(page.id);
+const next = upcoming[0];
+---
+<article class="card">
+    {page.data.thumbnail && (
+        <Picture
+            src={page.data.thumbnail}
+            widths={[400, 640, 960]}
+            sizes="(min-width: 1200px) 380px, (min-width: 700px) 50vw, 100vw"
+            formats={['avif', 'webp']}
+            alt=""
+            loading="lazy"
+        />
+    )}
+    {next && (
+        <p class="next-date" data-next={JSON.stringify(upcoming)}>
+            <Icon name="calendar-star" /><span>{shortDate(next.date)} · {next.city}</span>
+        </p>
+    )}
+    <div class="card-body">
+        <h3>
+            <a href={href}>{page.data.title}</a>
+            {page.data.subtitle && <small>{fr(page.data.subtitle)}</small>}
+        </h3>
+        {page.data.description && <p>{fr(page.data.description)}</p>}
+        <span class="more" aria-hidden="true">Découvrir <Icon name="arrow-right" /></span>
+    </div>
+</article>
+
+<script>
+    // The build only knows the dates upcoming at build time: pick the next
+    // one with the visitor's date, or hide the badge once they are all past.
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const now = new Date();
+    const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+    const format = new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+
+    document.querySelectorAll<HTMLElement>('[data-next]').forEach((badge) => {
+        const dates: { date: string; city: string }[] = JSON.parse(badge.dataset.next!);
+        const next = dates.find(({ date }) => date.slice(0, 10) >= today);
+        const text = badge.querySelector('span');
+        if (!next || !text) {
+            badge.hidden = true;
+            return;
+        }
+        text.textContent = `${format.format(new Date(`${next.date.slice(0, 10)}T00:00:00Z`))} · ${next.city}`;
+    });
+</script>

@@ -1,0 +1,23 @@
+---
+/**
+ * Phosphor duotone icons, inlined: https://phosphoricons.com
+ */
+const icons = import.meta.glob<string>('/node_modules/@phosphor-icons/core/assets/duotone/*.svg', {
+    query: '?raw',
+    import: 'default',
+    eager: true,
+});
+
+interface Props {
+    name: string;
+    class?: string;
+    label?: string;
+}
+
+const { name, class: className, label } = Astro.props;
+const svg = icons[`/node_modules/@phosphor-icons/core/assets/duotone/${name}-duotone.svg`];
+if (!svg) throw new Error(`Unknown icon "${name}"`);
+const attributes = label ? `role="img" aria-label="${label}"` : 'aria-hidden="true" focusable="false"';
+const html = svg.replace('<svg ', `<svg class="icon${className ? ` ${className}` : ''}" ${attributes} `);
+---
+<Fragment set:html={html} />

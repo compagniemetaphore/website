@@ -1,0 +1,60 @@
+---
+import type { ImageMetadata } from 'astro';
+import { Picture } from 'astro:assets';
+import Icon from './Icon.astro';
+import Paragraphs from './Paragraphs.astro';
+
+interface Props {
+    members: { name: string; role?: string; photo?: ImageMetadata; bio?: string }[];
+}
+
+const { members } = Astro.props;
+const slug = (name: string) => name.normalize('NFD').replace(/[^\w]+/g, '-').toLowerCase();
+---
+<ul class="team">
+    {members.map((member) => (
+        <li class="member">
+            {member.photo && (
+                <Picture src={member.photo} widths={[240, 480]} sizes="140px" formats={['avif', 'webp']} alt={member.name} loading="lazy" />
+            )}
+            <div class="member-body">
+                <h3>{member.name}</h3>
+                {member.role && <p class="member-role">{member.role}</p>}
+                {member.bio && (
+                    <button type="button" class="member-more" data-open={`bio-${slug(member.name)}`}>
+                        Lire la suite <Icon name="arrow-right" />
+                    </button>
+                )}
+            </div>
+            {member.bio && (
+                <dialog class="member-dialog" id={`bio-${slug(member.name)}`} aria-label={member.name}>
+                    <div class="member-dialog-inner">
+                        <button type="button" class="member-close" aria-label="Fermer" data-close><Icon name="x" /></button>
+                        <header>
+                            {member.photo && (
+                                <Picture src={member.photo} widths={[300, 600]} sizes="180px" formats={['avif', 'webp']} alt="" loading="lazy" />
+                            )}
+                            <div>
+                                <h3>{member.name}</h3>
+                                {member.role && <p class="member-role">{member.role}</p>}
+                            </div>
+                        </header>
+                        <div class="member-bio"><Paragraphs text={member.bio} /></div>
+                    </div>
+                </dialog>
+            )}
+        </li>
+    ))}
+</ul>
+
+<script>
+    document.querySelectorAll<HTMLButtonElement>('[data-open]').forEach((button) => {
+        const dialog = document.getElementById(button.dataset.open!) as HTMLDialogElement | null;
+        if (!dialog) return;
+        button.addEventListener('click', () => dialog.showModal());
+        dialog.addEventListener('click', (evt) => {
+            const target = evt.target as Element;
+            if (target === dialog || target.closest('[data-close]')) dialog.close();
+        });
+    });
+</script>

@@ -1,0 +1,11 @@
+---
+import { getEntry, render } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import ContactForm from '../components/ContactForm.astro';
+
+const page = (await getEntry('pages', 'contact'))!;
+const { Content } = await render(page);
+---
+<Base {...page.data}>
+    <ContactForm photo={page.data.photo}><Content /></ContactForm>
+</Base>

@@ -1,0 +1,30 @@
+---
+/**
+ * Closing call to action for venues (theatres, libraries, schools…).
+ */
+import Icon from './Icon.astro';
+import { site } from '../config';
+import { frenchSpacing as fr } from '../lib/typography.mjs';
+
+interface Props {
+    title: string;
+    text: string;
+    /** Extra link next to the email button. */
+    link?: { href: string; label: string };
+}
+
+const { title, text, link } = Astro.props;
+---
+<section class="section">
+    <div class="cta">
+        <div class="cta-decor" aria-hidden="true"><Icon name="ticket" /></div>
+        <div class="cta-text">
+            <h2>{fr(title)}</h2>
+            <p>{fr(text)}</p>
+        </div>
+        <div class="cta-actions">
+            <a href={`mailto:${site.email}`} class="button is-light"><Icon name="envelope-simple" />Nous écrire</a>
+            {link && <a href={link.href} class="button is-ghost">{link.label} <Icon name="arrow-right" /></a>}
+        </div>
+    </div>
+</section>

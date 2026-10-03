@@ -1,0 +1,106 @@
+---
+/**
+ * Show photos: one large picture at a time with thumbnails underneath.
+ * The large picture opens in the lightbox. Without JavaScript the
+ * thumbnails simply link to the large pictures.
+ */
+import type { ImageMetadata } from 'astro';
+import { Picture, getImage } from 'astro:assets';
+import Icon from './Icon.astro';
+import Lightbox from './Lightbox.astro';
+
+interface Props {
+    images: ImageMetadata[];
+    alt: string;
+    credit?: string;
+}
+
+const { images, alt, credit } = Astro.props;
+const large = await Promise.all(images.map((src) => getImage({ src, width: 2000, format: 'webp' })));
+---
+<div class="slideshow" data-slideshow>
+    <div class="slideshow-stage">
+        <div class="slideshow-track" data-track>
+            {images.map((image, index) => (
+                <a href={large[index].src} class="slide" data-lightbox aria-label={`Agrandir : ${alt} — photo ${index + 1}`}>
+                    <Picture
+                        src={image}
+                        widths={[640, 960, 1280, 1920]}
+                        sizes="(min-width: 1200px) 1150px, 100vw"
+                        formats={['avif', 'webp']}
+                        alt={`${alt} — photo ${index + 1}`}
+                        loading={index === 0 ? 'eager' : 'lazy'}
+                    />
+                </a>
+            ))}
+        </div>
+        {images.length > 1 && (
+            <>
+                <button type="button" class="slideshow-arrow is-prev" data-step="-1" aria-label="Photo précédente"><Icon name="caret-left" /></button>
+                <button type="button" class="slideshow-arrow is-next" data-step="1" aria-label="Photo suivante"><Icon name="caret-right" /></button>
+                <span class="slideshow-count" data-count>1 / {images.length}</span>
+            </>
+        )}
+    </div>
+    {images.length > 1 && (
+        <div class="slideshow-thumbs">
+            {images.map((image, index) => (
+                <a href={large[index].src} data-go={index} aria-label={`Photo ${index + 1}`} aria-current={index === 0 ? 'true' : 'false'}>
+                    <Picture src={image} widths={[160, 320]} sizes="140px" formats={['avif', 'webp']} alt="" loading="lazy" />
+                </a>
+            ))}
+        </div>
+    )}
+    {credit && <p class="gallery-credit">{credit}</p>}
+</div>
+<Lightbox />
+
+<script>
+    document.querySelectorAll<HTMLElement>('[data-slideshow]').forEach((show) => {
+        const track = show.querySelector<HTMLElement>('[data-track]')!;
+        const slides = [...show.querySelectorAll<HTMLElement>('.slide')];
+        const thumbs = [...show.querySelectorAll<HTMLAnchorElement>('[data-go]')];
+        const count = show.querySelector('[data-count]');
+        let current = 0;
+
+        const go = (index: number) => {
+            current = (index + slides.length) % slides.length;
+            track.style.transform = `translateX(-${current * 100}%)`;
+            slides.forEach((slide, i) => slide.toggleAttribute('inert', i !== current));
+            thumbs.forEach((thumb, i) => thumb.setAttribute('aria-current', String(i === current)));
+            // Keep the active thumbnail visible (scroll the strip, not the page).
+            const strip = thumbs[current]?.parentElement;
+            const thumb = thumbs[current];
+            if (strip && thumb) {
+                const left = thumb.offsetLeft - strip.offsetLeft;
+                if (left < strip.scrollLeft || left + thumb.offsetWidth > strip.scrollLeft + strip.clientWidth) {
+                    strip.scrollTo({ left: left - (strip.clientWidth - thumb.offsetWidth) / 2, behavior: 'smooth' });
+                }
+            }
+            if (count) count.textContent = `${current + 1} / ${slides.length}`;
+        };
+
+        show.classList.add('is-ready');
+        show.addEventListener('click', (evt) => {
+            const target = evt.target as Element;
+            const step = target.closest<HTMLElement>('[data-step]');
+            if (step) go(current + Number(step.dataset.step));
+            const thumb = target.closest<HTMLAnchorElement>('[data-go]');
+            if (thumb) {
+                evt.preventDefault();
+                go(Number(thumb.dataset.go));
+            }
+        });
+        show.addEventListener('keydown', (evt) => {
+            if (evt.key === 'ArrowLeft') go(current - 1);
+            if (evt.key === 'ArrowRight') go(current + 1);
+        });
+        let startX = 0;
+        track.addEventListener('touchstart', (evt) => (startX = evt.touches[0].clientX), { passive: true });
+        track.addEventListener('touchend', (evt) => {
+            const dx = evt.changedTouches[0].clientX - startX;
+            if (Math.abs(dx) > 50) go(current + (dx < 0 ? 1 : -1));
+        });
+        go(0);
+    });
+</script>

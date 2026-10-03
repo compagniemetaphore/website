@@ -1,0 +1,34 @@
+---
+import { getCollection } from 'astro:content';
+import PageCard from './PageCard.astro';
+import Section from './Section.astro';
+import { showActivity } from '../lib/agenda';
+
+interface Props {
+    category: 'upcoming' | 'available' | 'unavailable';
+    title?: string;
+    compact?: boolean;
+}
+
+const { category, title, compact = false } = Astro.props;
+// Shows with an upcoming date first (soonest first), then the most recently
+// played, then those without any date in the agenda (alphabetically).
+const activity = await showActivity();
+const group = (id: string) => (activity.get(id)?.next ? 0 : activity.get(id)?.last ? 1 : 2);
+const pages = (await getCollection('spectacles', (entry) => entry.data.category === category))
+    .sort((a, b) => {
+        const [ga, gb] = [group(a.id), group(b.id)];
+        if (ga !== gb) return ga - gb;
+        const [x, y] = [activity.get(a.id), activity.get(b.id)];
+        if (ga === 0) return x!.next!.localeCompare(y!.next!);
+        if (ga === 1) return y!.last!.localeCompare(x!.last!);
+        return a.data.title.localeCompare(b.data.title, 'fr');
+    });
+---
+{pages.length > 0 && (
+    <Section title={title}>
+        <ul class:list={['cards', { 'is-compact': compact }]}>
+            {pages.map((page) => <li><PageCard page={page} /></li>)}
+        </ul>
+    </Section>
+)}

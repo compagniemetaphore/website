@@ -1,0 +1,10 @@
+---
+import { frenchSpacing } from '../lib/typography.mjs';
+
+interface Props {
+    text?: string;
+}
+
+const paragraphs = frenchSpacing(Astro.props.text ?? '').split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+---
+{paragraphs.map((paragraph) => <p>{paragraph}</p>)}

@@ -1,0 +1,114 @@
+---
+import Calendar from './Calendar.astro';
+import DayList from './DayList.astro';
+import Icon from './Icon.astro';
+import { Picture } from 'astro:assets';
+import { getAgenda, groupByDay, longDay, monthName, nearestMonth } from '../lib/agenda';
+
+interface Props {
+    title?: string;
+    calendar?: boolean;
+    /** Also list past months. */
+    all?: boolean;
+
+}
+
+const { title, calendar = false, all = false } = Astro.props;
+
+// The build only gives a first guess: the script recomputes the visible
+// months and the selected one with the visitor's current date.
+const today = new Date().toISOString().slice(0, 10);
+const months = await getAgenda();
+const visible = all ? months : months.filter((m) => m.key >= today.slice(0, 7));
+const selected = nearestMonth(visible, today);
+const years = [...new Set(visible.map((m) => m.key.slice(0, 4)))];
+const keys = new Set(visible.map((m) => m.key));
+const shortMonths = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+const label = (key: string) => `${monthName(key)} ${key.slice(0, 4)}`;
+---
+{visible.length > 0 && (
+    <section class="section">
+        {title && <h2 class="section-title">{title}</h2>}
+        <div class:list={['agenda', { 'has-calendar': calendar }]} data-agenda data-all={all ? '' : undefined}>
+            <div class="agenda-bar">
+                <button type="button" class="agenda-arrow" data-step="-1" aria-label="Mois précédent"><Icon name="caret-left" /></button>
+                <button type="button" class="agenda-current" aria-expanded="false" data-picker-toggle>
+                    <span data-current>{selected && label(selected)}</span>
+                    <Icon name="caret-down" />
+                </button>
+                <button type="button" class="agenda-arrow" data-step="1" aria-label="Mois suivant"><Icon name="caret-right" /></button>
+                {all && (
+                    <button type="button" class="button is-small agenda-today" data-today>
+                        <Icon name="calendar-check" /> Prochaines dates
+                    </button>
+                )}
+                <div class="month-picker" data-picker hidden>
+                    {years.map((year) => (
+                        <div class="picker-year">
+                            <span>{year}</span>
+                            <div class="picker-months">
+                                {shortMonths.map((name, index) => {
+                                    const key = `${year}-${String(index + 1).padStart(2, '0')}`;
+                                    return (
+                                        <button type="button" data-month={key} disabled={!keys.has(key)} aria-label={label(key)}>
+                                            {name}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+            {visible.map((month) => (
+                <div
+                    class:list={['agenda-month', { 'is-active': month.key === selected }]}
+                    data-month={month.key}
+                    data-label={label(month.key)}
+                >
+                    <h3 class="agenda-month-title">{label(month.key)}</h3>
+                    {calendar && <Calendar month={month} />}
+                    <ul class="events">
+                        {month.events.map((event) => {
+                            const days = groupByDay(event.dates);
+                            return (
+                                <li>
+                                    <article class:list={['event', { 'has-poster': event.poster }]}>
+                                        {event.poster && (
+                                            <a href={`/${event.slug}`} class="event-poster" tabindex="-1" aria-hidden="true">
+                                                <Picture src={event.poster} widths={[96, 192]} sizes="96px" formats={['avif', 'webp']} alt="" loading="lazy" />
+                                            </a>
+                                        )}
+                                        <header>
+                                            <h4><a href={`/${event.slug}`}>{event.title}</a></h4>
+                                            <p><Icon name="map-pin" />{event.location}</p>
+                                        </header>
+                                        <div class="dates" data-dates>
+                                            {days.length <= 4 ? <DayList days={days} /> : (
+                                                <>
+                                                    <p class="dates-summary">
+                                                        Du {longDay(days[0].day)} au {longDay(days[days.length - 1].day)} {monthName(month.key)}
+                                                        <span>{event.dates.length} représentations</span>
+                                                    </p>
+                                                    <details>
+                                                        <summary>Voir les horaires</summary>
+                                                        <DayList days={days} />
+                                                    </details>
+                                                </>
+                                            )}
+                                        </div>
+                                    </article>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                </div>
+            ))}
+            <p class="agenda-empty" data-empty hidden>Aucune date n'est programmée pour le moment, revenez bientôt !</p>
+        </div>
+    </section>
+)}
+
+<script>
+    import '../scripts/agenda';
+</script>

@@ -1,0 +1,117 @@
+---
+import '@fontsource-variable/fraunces/soft.css';
+import '@fontsource-variable/nunito';
+import '../styles/global.css';
+import type { ImageMetadata } from 'astro';
+import { Image } from 'astro:assets';
+import Icon from '../components/Icon.astro';
+import { menu, site } from '../config';
+import { frenchSpacing as fr } from '../lib/typography.mjs';
+
+interface Props {
+    title: string;
+    subtitle?: string;
+    description?: string;
+    header?: ImageMetadata;
+    /** Which part of the banner image stays visible. */
+    framing?: 'top' | 'center' | 'bottom';
+    home?: boolean;
+}
+
+const { title: rawTitle, subtitle: rawSubtitle, description: rawDescription, header, framing = 'center', home = false } = Astro.props;
+const title = fr(rawTitle);
+const subtitle = rawSubtitle && fr(rawSubtitle);
+const description = rawDescription && fr(rawDescription);
+const position = { top: '50% 20%', center: '50% 50%', bottom: '50% 80%' }[framing];
+const path = Astro.url.pathname.replace(/\/$/, '');
+const fullTitle = home ? site.name : `${title} - ${site.name}`;
+const year = new Date().getFullYear();
+---
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {description && <meta name="description" content={description}>}
+    <title>{fullTitle}</title>
+    <script is:inline>document.documentElement.classList.add('js');</script>
+    <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site)}>
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <link rel="sitemap" href="/sitemap-index.xml">
+    <meta name="theme-color" content="#7e1a40">
+    <meta property="og:site_name" content={site.name}>
+    <meta property="og:title" content={title}>
+    {description && <meta property="og:description" content={description}>}
+    <meta property="og:locale" content="fr_FR">
+</head>
+<body>
+    <nav class="site-nav">
+        <a class="brand" href="/">{site.brand}</a>
+        <input type="checkbox" id="menu-button" hidden>
+        <label for="menu-button" id="menu-label" aria-label="Menu principal" role="button">
+            <Icon name="list" class="open" /><Icon name="x" class="close" />
+        </label>
+        <ul id="menu" aria-labelledby="menu-label">
+            {menu.map((item) => (
+                <li>
+                    <a href={item.href} aria-current={path === item.href || path.startsWith(`${item.href}/`) ? 'page' : undefined}>
+                        <Icon name={item.icon} />{item.label}
+                    </a>
+                </li>
+            ))}
+        </ul>
+    </nav>
+    <main>
+        {header ? (
+            <header class:list={['hero', { 'hero-home': home }]}>
+                <Image
+                    src={header}
+                    widths={[800, 1280, 1920, 2560]}
+                    sizes="100vw"
+                    alt=""
+                    loading="eager"
+                    fetchpriority="high"
+                    style={`object-position: ${position}`}
+                />
+                <div class="hero-content">
+                    <h1>
+                        {title}
+                        {subtitle && <small>{subtitle}</small>}
+                    </h1>
+                </div>
+            </header>
+        ) : (
+            <header class="page-head">
+                <h1>
+                    {title}
+                    {subtitle && <small>{subtitle}</small>}
+                </h1>
+            </header>
+        )}
+        {description && <p class="lead">{description}</p>}
+        <slot />
+    </main>
+    <footer class="site-footer">
+        <div class="footer-main">
+            <div>
+                <a class="brand" href="/">{site.brand}</a>
+                <ul class="contact-list" aria-label="Nous trouver">
+                    <li><Icon name="map-pin" /><span>{site.address.join(', ')}</span></li>
+                    <li><Icon name="phone" /><a href={`tel:${site.phone.replace(/\s/g, '')}`}>{site.phone}</a></li>
+                    <li><Icon name="envelope-simple" /><a href={`mailto:${site.email}`}>{site.email}</a></li>
+                </ul>
+            </div>
+            <ul class="socials" aria-label="Réseaux sociaux">
+                <li><a href={site.facebook} target="_blank" rel="noopener"><Icon name="facebook-logo" label="Facebook" /></a></li>
+                <li><a href={site.youtube} target="_blank" rel="noopener"><Icon name="youtube-logo" label="YouTube" /></a></li>
+            </ul>
+        </div>
+        <p class="legal">
+            © {year} {site.name} · N° Siret {site.siret} · Code APE {site.ape} · {site.credits}
+        </p>
+    </footer>
+    <script>
+        import '../scripts/menu';
+    </script>
+</body>
+</html>

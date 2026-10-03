@@ -1,0 +1,24 @@
+---
+/**
+ * Grid of same-size pictures (posters), opening in the lightbox.
+ */
+import type { ImageMetadata } from 'astro';
+import { Picture, getImage } from 'astro:assets';
+import Lightbox from './Lightbox.astro';
+
+interface Props {
+    images: ImageMetadata[];
+    alt: string;
+}
+
+const { images, alt } = Astro.props;
+const large = await Promise.all(images.map((src) => getImage({ src, width: 2000, format: 'webp' })));
+---
+<div class="gallery">
+    {images.map((image, index) => (
+        <a href={large[index].src} data-lightbox aria-label={`Agrandir : ${alt} ${index + 1}`}>
+            <Picture src={image} widths={[300, 600]} sizes="(min-width: 50rem) 300px, 50vw" formats={['avif', 'webp']} alt={`${alt} ${index + 1}`} loading="lazy" />
+        </a>
+    ))}
+</div>
+<Lightbox />

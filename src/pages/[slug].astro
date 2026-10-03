@@ -1,0 +1,67 @@
+---
+import { getCollection, render } from 'astro:content';
+import { Picture } from 'astro:assets';
+import Base from '../layouts/Base.astro';
+import Downloads from '../components/Downloads.astro';
+import Slideshow from '../components/Slideshow.astro';
+import Press from '../components/Press.astro';
+import Section from '../components/Section.astro';
+import Teaser from '../components/Teaser.astro';
+import Cta from '../components/Cta.astro';
+
+export async function getStaticPaths() {
+    const spectacles = await getCollection('spectacles');
+    return spectacles.map((page) => ({ params: { slug: page.id }, props: { page } }));
+}
+
+const { page } = Astro.props;
+const { data } = page;
+const { Content } = await render(page);
+const hasText = !!page.body?.trim();
+const hasAside = !!(data.poster || data.downloads.length);
+// Teaser preview: a gallery photo other than the banner when possible.
+const cover = data.gallery.find((image) => image.src !== data.header?.src) ?? data.header ?? data.thumbnail;
+---
+<Base {...data}>
+    {(hasText || hasAside || data.teaser) && (
+        <section class:list={['section', 'show-intro', { 'has-aside': hasAside }]}>
+            {hasAside && (
+                <aside class="show-aside">
+                    {data.poster && (
+                        <Picture
+                            src={data.poster}
+                            pictureAttributes={{ class: 'poster' }}
+                            widths={[320, 640]}
+                            sizes="320px"
+                            formats={['avif', 'webp']}
+                            alt={`Affiche — ${data.title}`}
+                        />
+                    )}
+                    {data.downloads.length > 0 && (
+                        <div class="show-docs">
+                            <h2>Documents</h2>
+                            <Downloads files={data.downloads} />
+                        </div>
+                    )}
+                </aside>
+            )}
+            <div class="show-main">
+                {hasText && <div class="prose"><Content /></div>}
+                {data.teaser && <Teaser url={data.teaser} cover={cover} title={data.title} />}
+            </div>
+        </section>
+    )}
+    {data.gallery.length > 0 && (
+        <Section class="is-contrasted">
+            <Slideshow images={data.gallery} alt={data.title} credit={data.galleryCredit} />
+        </Section>
+    )}
+    {data.press.length > 0 && <Section title="La presse en parle"><Press quotes={data.press} /></Section>}
+    {(data.category === 'available' || data.category === 'upcoming') && (
+        <Cta
+            title={`Accueillir « ${data.title} » ?`}
+            text="Écrivez-nous pour connaître nos disponibilités, les conditions d'accueil et recevoir le dossier complet."
+            link={{ href: '/agenda', label: "Voir l'agenda" }}
+        />
+    )}
+</Base>

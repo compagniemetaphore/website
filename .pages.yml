@@ -1,0 +1,221 @@
+# Pages CMS configuration — https://pagescms.org
+# Open https://app.pagescms.org, sign in and pick this repository.
+# Every save is a commit on master; GitHub Actions then rebuilds and
+# publishes the site to GitHub Pages (about 2 minutes).
+
+media:
+  - name: images
+    label: Images
+    input: src/assets/images
+    # Paths are written relative to the content files, so Astro can optimize the images.
+    output: ../../assets/images
+    categories: [image]
+  - name: files
+    label: Fichiers
+    input: public/downloads
+    output: /downloads
+
+content:
+  - name: events
+    label: Agenda
+    description: Un spectacle joué dans un lieu, à une ou plusieurs dates. Les dates passées disparaissent automatiquement du site.
+    type: collection
+    path: src/content/events
+    format: yaml
+    filename: "{location}-{year}{month}{day}{hour}{minute}{second}.yml"
+    view:
+      primary: location
+      fields: [location, spectacle]
+      sort: [location]
+    fields:
+      - name: spectacle
+        label: Spectacle
+        type: reference
+        required: true
+        options:
+          collection: spectacles
+          value: "{name}"
+          label: "{title}"
+          search: title
+      - name: location
+        label: Lieu
+        type: string
+        required: true
+        description: "Ex : Théâtre de la Croix-Rousse, Lyon"
+      - name: dates
+        label: Dates
+        type: date
+        required: true
+        list:
+          min: 1
+          collapsible: false
+        options:
+          time: true
+
+  - name: spectacles
+    label: Spectacles
+    type: collection
+    path: src/content/spectacles
+    format: yaml-frontmatter
+    filename: "{primary}.md"
+    view:
+      primary: title
+      fields: [title, category]
+      sort: [title]
+    fields:
+      - { name: title, label: Titre, type: string, required: true }
+      - { name: subtitle, label: Sous-titre, type: string }
+      - name: description
+        label: Description courte
+        type: text
+        description: Affichée dans la liste des spectacles et en haut de la page.
+      - name: category
+        label: Catégorie
+        type: select
+        default: available
+        options:
+          values:
+            - { value: available, label: En tournée }
+            - { value: upcoming, label: Prochainement }
+            - { value: unavailable, label: Au repos }
+            - { value: hidden, label: "Masqué (page accessible uniquement par lien)" }
+      - name: header
+        label: Image d'en-tête
+        type: image
+        description: Bandeau en haut de la page.
+        options: { media: images }
+      - name: framing
+        label: Cadrage du bandeau
+        type: select
+        default: center
+        description: Partie de l'image gardée visible dans le bandeau.
+        options:
+          values:
+            - { value: top, label: Haut }
+            - { value: center, label: Centre }
+            - { value: bottom, label: Bas }
+      - name: thumbnail
+        label: Vignette
+        type: image
+        description: Image affichée dans la liste des spectacles (recadrée en 16:9).
+        options: { media: images }
+      - name: poster
+        label: Affiche
+        type: image
+        options: { media: images }
+      - name: body
+        label: Texte principal
+        type: rich-text
+        description: "Commencer par un titre (ex : Résumé de l'histoire), d'autres titres peuvent suivre."
+        options: { media: images }
+      - name: teaser
+        label: Lien du teaser (YouTube)
+        type: string
+      - name: downloads
+        label: Téléchargements
+        type: object
+        list: true
+        fields:
+          - { name: label, label: Libellé, type: string, required: true, description: "Ex : Dossier de presse, Fiche technique, Affiche A3, Photos HD" }
+          - { name: file, label: Fichier, type: file, required: true, options: { media: files } }
+      - name: gallery
+        label: Galerie photos
+        type: image
+        description: Diaporama sur la page du spectacle, dans cet ordre.
+        options: { media: images, multiple: true }
+      - name: galleryCredit
+        label: Crédit photos
+        type: string
+      - name: press
+        label: La presse en parle
+        type: object
+        list: true
+        fields:
+          - { name: text, label: Citation, type: text, required: true }
+          - { name: author, label: Auteur, type: string }
+          - { name: source, label: Journal, type: string }
+
+  - name: pages
+    label: Pages
+    type: group
+    items:
+      - { name: home, label: Accueil, type: file, path: src/content/pages/home.md, format: yaml-frontmatter, fields: &page_fields [
+          { name: title, label: Titre, type: string, required: true },
+          { name: subtitle, label: Sous-titre, type: string },
+          { name: description, label: Description, type: text },
+          { name: header, label: Image d'en-tête, type: image, options: { media: images } },
+          { name: framing, label: Cadrage du bandeau, type: select, default: center, options: { values: [ { value: top, label: Haut }, { value: center, label: Centre }, { value: bottom, label: Bas } ] } },
+          { name: body, label: Contenu, type: rich-text, options: { media: images } },
+        ] }
+      - name: compagnie
+        label: La compagnie
+        type: file
+        path: src/content/pages/compagnie.md
+        format: yaml-frontmatter
+        fields:
+          - { name: title, label: Titre, type: string, required: true }
+          - { name: subtitle, label: Sous-titre, type: string }
+          - { name: description, label: Description, type: text }
+          - { name: header, label: Image d'en-tête, type: image, options: { media: images } }
+          - { name: framing, label: Cadrage du bandeau, type: select, default: center, options: { values: [ { value: top, label: Haut }, { value: center, label: Centre }, { value: bottom, label: Bas } ] } }
+          - { name: body, label: Le projet artistique, type: rich-text, options: { media: images } }
+          - name: figures
+            label: Chiffres clés
+            type: object
+            list: true
+            fields:
+              - { name: value, label: Chiffre, type: string, required: true }
+              - { name: label, label: Légende, type: string, required: true }
+          - { name: quote, label: Citation mise en avant, type: text }
+          - { name: teamTitle, label: Titre de l'équipe, type: string, default: L'équipe }
+          - name: team
+            label: Équipe
+            type: object
+            list: true
+            fields:
+              - { name: name, label: Nom, type: string, required: true }
+              - { name: role, label: Rôle (court), type: text }
+              - { name: photo, label: Photo, type: image, options: { media: images } }
+              - { name: bio, label: Présentation, type: text }
+          - name: board
+            label: Le bureau
+            type: object
+            list: true
+            fields:
+              - { name: name, label: Nom, type: string, required: true }
+              - { name: role, label: Fonction, type: string, required: true }
+          - name: collaborators
+            label: Ils ont travaillé avec nous
+            type: object
+            list: true
+            fields:
+              - { name: name, label: Nom, type: string, required: true }
+              - { name: role, label: Métier, type: string }
+          - { name: thanks, label: Remerciements, type: text }
+      - { name: spectacles-page, label: Nos spectacles, type: file, path: src/content/pages/spectacles.md, format: yaml-frontmatter, fields: *page_fields }
+      - { name: agenda, label: Agenda, type: file, path: src/content/pages/agenda.md, format: yaml-frontmatter, fields: *page_fields }
+      - name: historique
+        label: L'historique en image
+        type: file
+        path: src/content/pages/historique.md
+        format: yaml-frontmatter
+        fields:
+          - { name: title, label: Titre, type: string, required: true }
+          - { name: subtitle, label: Sous-titre, type: string }
+          - { name: description, label: Description, type: text }
+          - name: posters
+            label: Affiches
+            type: image
+            description: Les 10 premières s'affichent aussi en bas de la page des spectacles.
+            options: { media: images, multiple: true }
+          - { name: body, label: Texte (facultatif), type: rich-text, options: { media: images } }
+      - name: contact
+        label: Contact
+        type: file
+        path: src/content/pages/contact.md
+        format: yaml-frontmatter
+        fields:
+          - { name: title, label: Titre, type: string, required: true }
+          - { name: description, label: Description, type: text }
+          - { name: photo, label: Photo de la carte de contact, type: image, options: { media: images } }
+          - { name: body, label: Texte d'invitation, type: rich-text }

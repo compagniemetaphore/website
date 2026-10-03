@@ -1,0 +1,57 @@
+---
+/**
+ * Full-screen viewer for every [data-lightbox] link of the page (links point
+ * to the large image, so they still work without JavaScript).
+ */
+import Icon from './Icon.astro';
+---
+<dialog class="lightbox" aria-label="Photo agrandie">
+    <img alt="" />
+    <p class="lightbox-caption" aria-live="polite"></p>
+    <button type="button" class="lightbox-close" aria-label="Fermer" data-close><Icon name="x" /></button>
+    <button type="button" class="lightbox-prev" aria-label="Photo précédente" data-step="-1"><Icon name="caret-left" /></button>
+    <button type="button" class="lightbox-next" aria-label="Photo suivante" data-step="1"><Icon name="caret-right" /></button>
+</dialog>
+
+<script>
+    const dialog = document.querySelector<HTMLDialogElement>('dialog.lightbox');
+    const links = [...document.querySelectorAll<HTMLAnchorElement>('[data-lightbox]')];
+
+    if (dialog && links.length) {
+        const img = dialog.querySelector('img')!;
+        const caption = dialog.querySelector('.lightbox-caption')!;
+        let current = 0;
+
+        const show = (index: number) => {
+            current = (index + links.length) % links.length;
+            const link = links[current];
+            img.src = link.href;
+            img.alt = link.querySelector('img')?.alt ?? '';
+            caption.textContent = `${current + 1} / ${links.length}`;
+            new Image().src = links[(current + 1) % links.length].href;
+        };
+
+        links.forEach((link, index) => link.addEventListener('click', (evt) => {
+            evt.preventDefault();
+            show(index);
+            dialog.showModal();
+        }));
+        dialog.addEventListener('click', (evt) => {
+            const target = evt.target as HTMLElement;
+            if (target === dialog || target.closest('[data-close]')) dialog.close();
+            const step = target.closest<HTMLElement>('[data-step]')?.dataset.step;
+            if (step) show(current + Number(step));
+        });
+        dialog.addEventListener('keydown', (evt) => {
+            if (evt.key === 'ArrowLeft') show(current - 1);
+            if (evt.key === 'ArrowRight') show(current + 1);
+        });
+        let startX = 0;
+        dialog.addEventListener('touchstart', (evt) => (startX = evt.touches[0].clientX), { passive: true });
+        dialog.addEventListener('touchend', (evt) => {
+            const dx = evt.changedTouches[0].clientX - startX;
+            if (Math.abs(dx) > 50) show(current + (dx < 0 ? 1 : -1));
+        });
+        if (links.length < 2) dialog.querySelectorAll('[data-step]').forEach((b) => b.remove());
+    }
+</script>

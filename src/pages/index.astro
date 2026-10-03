@@ -1,0 +1,19 @@
+---
+import { getEntry, render } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import Cta from '../components/Cta.astro';
+import PageList from '../components/PageList.astro';
+
+const page = (await getEntry('pages', 'home'))!;
+const { Content } = await render(page);
+---
+<Base {...page.data} home>
+    {page.body?.trim() && <section class="section prose"><Content /></section>}
+    <PageList category="upcoming" title="Prochainement" />
+    <PageList category="available" title="Les spectacles en tournée" />
+    <Cta
+        title="Vous souhaitez accueillir un spectacle ?"
+        text="Théâtres, médiathèques, écoles, festivals… Écrivez-nous pour connaître nos disponibilités et recevoir dossiers de presse et fiches techniques."
+        link={{ href: '/spectacles', label: 'Voir les spectacles' }}
+    />
+</Base>

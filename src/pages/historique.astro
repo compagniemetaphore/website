@@ -1,0 +1,17 @@
+---
+import { getEntry, render } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import Gallery from '../components/Gallery.astro';
+import Section from '../components/Section.astro';
+
+const page = (await getEntry('pages', 'historique'))!;
+const { Content } = await render(page);
+---
+<Base {...page.data}>
+    {page.body?.trim() && <section class="section prose"><Content /></section>}
+    {page.data.posters.length > 0 && (
+        <Section>
+            <Gallery images={page.data.posters} alt="Affiche" />
+        </Section>
+    )}
+</Base>

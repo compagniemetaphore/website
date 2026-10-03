@@ -1,0 +1,105 @@
+---
+/**
+ * Press quotes as a slider (all listed without JavaScript).
+ */
+import Icon from './Icon.astro';
+import Paragraphs from './Paragraphs.astro';
+
+interface Props {
+    quotes: { text: string; author?: string; source?: string }[];
+}
+
+const { quotes } = Astro.props;
+---
+<div class="press" data-press>
+    <div class="press-viewport">
+        <div class="press-track" data-track>
+            {quotes.map((quote, index) => (
+                <figure class="quote" data-quote aria-roledescription="diapositive" aria-label={`${index + 1} sur ${quotes.length}`}>
+                    <figcaption class="quote-meta">
+                        <Icon name="quotes" />
+                        {quote.source && <strong>{quote.source}</strong>}
+                        {quote.author && <span>{quote.author}</span>}
+                    </figcaption>
+                    <div class="quote-body">
+                        <blockquote data-clamp><Paragraphs text={quote.text} /></blockquote>
+                        <button type="button" class="quote-more" data-expand hidden>Lire la suite</button>
+                    </div>
+                </figure>
+            ))}
+        </div>
+    </div>
+    {quotes.length > 1 && (
+        <div class="press-nav">
+            <button type="button" class="agenda-arrow" data-step="-1" aria-label="Article précédent"><Icon name="caret-left" /></button>
+            <div class="press-dots">
+                {quotes.map((quote, index) => (
+                    <button type="button" data-go={index} aria-label={`Article ${index + 1}${quote.source ? ` : ${quote.source}` : ''}`} aria-current={index === 0 ? 'true' : 'false'}></button>
+                ))}
+            </div>
+            <span class="press-count" data-count>1 / {quotes.length}</span>
+            <button type="button" class="agenda-arrow" data-step="1" aria-label="Article suivant"><Icon name="caret-right" /></button>
+        </div>
+    )}
+</div>
+
+<script>
+    document.querySelectorAll<HTMLElement>('[data-press]').forEach((press) => {
+        const viewport = press.querySelector<HTMLElement>('.press-viewport')!;
+        const track = press.querySelector<HTMLElement>('[data-track]')!;
+        const slides = [...press.querySelectorAll<HTMLElement>('[data-quote]')];
+        const dots = [...press.querySelectorAll<HTMLButtonElement>('[data-go]')];
+        const count = press.querySelector('[data-count]');
+        let current = 0;
+
+        // The viewport takes the height of the visible slide.
+        const fit = () => (viewport.style.height = `${slides[current].offsetHeight}px`);
+
+        // Long quotes are cut (once the slider styles apply), with a button
+        // to read them entirely.
+        press.classList.add('is-ready');
+        slides.forEach((slide) => {
+            const text = slide.querySelector<HTMLElement>('[data-clamp]')!;
+            const fits = text.scrollHeight <= text.clientHeight + 4;
+            slide.querySelector<HTMLButtonElement>('[data-expand]')!.hidden = fits;
+            // Short quotes are shown entirely, without the fade.
+            if (fits) slide.classList.add('is-open');
+        });
+
+        const show = (index: number) => {
+            current = (index + slides.length) % slides.length;
+            track.style.transform = `translateX(-${current * 100}%)`;
+            slides.forEach((slide, i) => slide.toggleAttribute('inert', i !== current));
+            dots.forEach((dot, i) => dot.setAttribute('aria-current', String(i === current)));
+            if (count) count.textContent = `${current + 1} / ${slides.length}`;
+            fit();
+        };
+
+        press.addEventListener('click', (evt) => {
+            const target = evt.target as Element;
+            const step = target.closest<HTMLElement>('[data-step]');
+            if (step) show(current + Number(step.dataset.step));
+            const go = target.closest<HTMLElement>('[data-go]');
+            if (go) show(Number(go.dataset.go));
+            const expand = target.closest<HTMLButtonElement>('[data-expand]');
+            if (expand) {
+                expand.closest('[data-quote]')!.classList.add('is-open');
+                expand.hidden = true;
+                fit();
+            }
+        });
+        press.addEventListener('keydown', (evt) => {
+            if (evt.key === 'ArrowLeft') show(current - 1);
+            if (evt.key === 'ArrowRight') show(current + 1);
+        });
+        let startX = 0;
+        viewport.addEventListener('touchstart', (evt) => (startX = evt.touches[0].clientX), { passive: true });
+        viewport.addEventListener('touchend', (evt) => {
+            const dx = evt.changedTouches[0].clientX - startX;
+            if (Math.abs(dx) > 50) show(current + (dx < 0 ? 1 : -1));
+        });
+        window.addEventListener('resize', fit);
+
+        show(0);
+    });
+</script>

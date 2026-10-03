@@ -1,0 +1,17 @@
+---
+import { formatTime, shortDay } from '../lib/agenda';
+
+interface Props {
+    days: { day: string; times: string[] }[];
+}
+
+const { days } = Astro.props;
+---
+<ul class="days">
+    {days.map(({ day, times }) => (
+        <li>
+            <span class="day-name">{shortDay(day)}</span>
+            <span class="times">{times.map((time) => <time datetime={time}>{formatTime(time)}</time>)}</span>
+        </li>
+    ))}
+</ul>

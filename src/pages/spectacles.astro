@@ -1,0 +1,16 @@
+---
+import { getEntry, render } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import PageList from '../components/PageList.astro';
+import PosterStrip from '../components/PosterStrip.astro';
+
+const page = (await getEntry('pages', 'spectacles'))!;
+const { Content } = await render(page);
+---
+<Base {...page.data}>
+    {page.body?.trim() && <section class="section prose"><Content /></section>}
+    <PageList category="upcoming" title="Prochainement" />
+    <PageList category="available" title="Les spectacles en tournée" />
+    <PageList category="unavailable" title="Les spectacles au repos" compact />
+    <PosterStrip />
+</Base>

@@ -1,0 +1,38 @@
+---
+import type { ImageMetadata } from 'astro';
+import { Picture } from 'astro:assets';
+import Icon from './Icon.astro';
+import { site } from '../config';
+
+interface Props {
+    photo?: ImageMetadata;
+}
+
+const { photo } = Astro.props;
+---
+<section class="section">
+    <div class:list={['contact-card', { 'has-photo': photo }]}>
+        {photo && (
+            <Picture src={photo} widths={[600, 1000]} sizes="(min-width: 56rem) 500px, 100vw" formats={['avif', 'webp']} alt="" class="contact-photo" />
+        )}
+        <div class="contact-body">
+            <h2>Écrivez-nous</h2>
+            <div class="prose"><slot /></div>
+            <a href={`mailto:${site.email}`} class="button is-primary contact-mail"><Icon name="paper-plane-tilt" />{site.email}</a>
+            <ul class="contact-rows">
+                <li>
+                    <Icon name="phone" />
+                    <span><small>Téléphone</small><a href={`tel:${site.phone.replace(/\s/g, '')}`}>{site.phone}</a></span>
+                </li>
+                <li>
+                    <Icon name="map-pin" />
+                    <span><small>Adresse</small>{site.address.join(', ')}</span>
+                </li>
+            </ul>
+            <ul class="socials" aria-label="Réseaux sociaux">
+                <li><a href={site.facebook} target="_blank" rel="noopener"><Icon name="facebook-logo" label="Facebook" /></a></li>
+                <li><a href={site.youtube} target="_blank" rel="noopener"><Icon name="youtube-logo" label="YouTube" /></a></li>
+            </ul>
+        </div>
+    </div>
+</section>
